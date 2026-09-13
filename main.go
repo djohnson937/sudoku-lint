@@ -1,18 +1,36 @@
 package main
 
 import (
+	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
 	"sort"
 )
 
+// jsonFinding is the shape printed with -json. It carries the file path
+// alongside a Finding since Finding itself doesn't know what file it came
+// from.
+type jsonFinding struct {
+	File    string `json:"file"`
+	Line    int    `json:"line"`
+	Col     int    `json:"col,omitempty"`
+	Message string `json:"message"`
+}
+
 func main() {
-	if len(os.Args) != 2 {
-		fmt.Fprintln(os.Stderr, "usage: sudoku-lint <board-file>")
+	jsonOutput := flag.Bool("json", false, "print findings as a JSON array instead of text")
+	flag.Usage = func() {
+		fmt.Fprintln(os.Stderr, "usage: sudoku-lint [-json] <board-file>")
+	}
+	flag.Parse()
+
+	if flag.NArg() != 1 {
+		flag.Usage()
 		os.Exit(2)
 	}
 
-	path := os.Args[1]
+	path := flag.Arg(0)
 	f, err := os.Open(path)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "sudoku-lint: %v\n", err)
@@ -33,8 +51,21 @@ func main() {
 		return findings[i].Col < findings[j].Col
 	})
 
-	for _, fnd := range findings {
-		fmt.Printf("%s:%s\n", path, fnd.String())
+	if *jsonOutput {
+		out := make([]jsonFinding, len(findings))
+		for i, fnd := range findings {
+			out[i] = jsonFinding{File: path, Line: fnd.Line, Col: fnd.Col, Message: fnd.Message}
+		}
+		enc := json.NewEncoder(os.Stdout)
+		enc.SetIndent("", "  ")
+		if err := enc.Encode(out); err != nil {
+			fmt.Fprintf(os.Stderr, "sudoku-lint: %v\n", err)
+			os.Exit(2)
+		}
+	} else {
+		for _, fnd := range findings {
+			fmt.Printf("%s:%s\n", path, fnd.String())
+		}
 	}
 
 	if len(findings) > 0 {

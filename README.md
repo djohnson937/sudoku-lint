@@ -52,6 +52,14 @@ examples/invalid.sudoku:line 6:1: invalid character 'X', want a digit 1-9 or '.'
 Exit code is 1 when there are findings, 2 on a usage or I/O error, 0 when the
 board is clean.
 
+Pass `-json` to get findings as a JSON array instead, one object per
+finding with `file`, `line`, `col` (omitted when the finding applies to a
+whole row), and `message`:
+
+```
+go run . -json examples/invalid.sudoku
+```
+
 ## Building
 
 ```
