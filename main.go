@@ -22,23 +22,29 @@ func main() {
 	jsonOutput := flag.Bool("json", false, "print findings as a JSON array instead of text")
 	flag.Usage = func() {
 		fmt.Fprintln(os.Stderr, "usage: sudoku-lint [-json] <board-file>")
+		fmt.Fprintln(os.Stderr, "       sudoku-lint [-json] -    (read board from stdin)")
 	}
 	flag.Parse()
 
-	if flag.NArg() != 1 {
+	if flag.NArg() > 1 {
 		flag.Usage()
 		os.Exit(2)
 	}
 
-	path := flag.Arg(0)
-	f, err := os.Open(path)
-	if err != nil {
-		fmt.Fprintf(os.Stderr, "sudoku-lint: %v\n", err)
-		os.Exit(2)
+	path := "<stdin>"
+	in := os.Stdin
+	if flag.NArg() == 1 && flag.Arg(0) != "-" {
+		path = flag.Arg(0)
+		f, err := os.Open(path)
+		if err != nil {
+			fmt.Fprintf(os.Stderr, "sudoku-lint: %v\n", err)
+			os.Exit(2)
+		}
+		defer f.Close()
+		in = f
 	}
-	defer f.Close()
 
-	findings, err := Lint(f)
+	findings, err := Lint(in)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "sudoku-lint: %v\n", err)
 		os.Exit(2)

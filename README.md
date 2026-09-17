@@ -60,6 +60,13 @@ whole row), and `message`:
 go run . -json examples/invalid.sudoku
 ```
 
+Omit the file argument, or pass `-`, to read the board from stdin. Findings
+are reported against `<stdin>` in that case:
+
+```
+cat examples/invalid.sudoku | go run .
+```
+
 ## Building
 
 ```
