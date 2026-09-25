@@ -20,9 +20,10 @@ type jsonFinding struct {
 
 func main() {
 	jsonOutput := flag.Bool("json", false, "print findings as a JSON array instead of text")
+	strict := flag.Bool("strict", false, "fail on comment or blank lines instead of skipping them")
 	flag.Usage = func() {
-		fmt.Fprintln(os.Stderr, "usage: sudoku-lint [-json] <board-file>")
-		fmt.Fprintln(os.Stderr, "       sudoku-lint [-json] -    (read board from stdin)")
+		fmt.Fprintln(os.Stderr, "usage: sudoku-lint [-json] [-strict] <board-file>")
+		fmt.Fprintln(os.Stderr, "       sudoku-lint [-json] [-strict] -    (read board from stdin)")
 	}
 	flag.Parse()
 
@@ -44,7 +45,7 @@ func main() {
 		in = f
 	}
 
-	findings, err := Lint(in)
+	findings, err := Lint(in, *strict)
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "sudoku-lint: %v\n", err)
 		os.Exit(2)

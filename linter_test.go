@@ -17,7 +17,7 @@ const validBoard = `534678912
 `
 
 func TestLintValidBoard(t *testing.T) {
-	findings, err := Lint(strings.NewReader(validBoard))
+	findings, err := Lint(strings.NewReader(validBoard), false)
 	if err != nil {
 		t.Fatalf("Lint returned error: %v", err)
 	}
@@ -28,7 +28,39 @@ func TestLintValidBoard(t *testing.T) {
 
 func TestLintSkipsCommentsAndBlankLines(t *testing.T) {
 	board := "# header\n\n" + validBoard
-	findings, err := Lint(strings.NewReader(board))
+	findings, err := Lint(strings.NewReader(board), false)
+	if err != nil {
+		t.Fatalf("Lint returned error: %v", err)
+	}
+	if len(findings) != 0 {
+		t.Fatalf("expected no findings, got %v", findings)
+	}
+}
+
+func TestLintStrictRejectsComment(t *testing.T) {
+	board := "# header\n" + validBoard
+	findings, err := Lint(strings.NewReader(board), true)
+	if err != nil {
+		t.Fatalf("Lint returned error: %v", err)
+	}
+	if !containsMessage(findings, "comment line not allowed in strict mode") {
+		t.Fatalf("expected comment finding, got %v", findings)
+	}
+}
+
+func TestLintStrictRejectsBlankLine(t *testing.T) {
+	board := "\n" + validBoard
+	findings, err := Lint(strings.NewReader(board), true)
+	if err != nil {
+		t.Fatalf("Lint returned error: %v", err)
+	}
+	if !containsMessage(findings, "blank line not allowed in strict mode") {
+		t.Fatalf("expected blank line finding, got %v", findings)
+	}
+}
+
+func TestLintStrictAllowsCleanBoard(t *testing.T) {
+	findings, err := Lint(strings.NewReader(validBoard), true)
 	if err != nil {
 		t.Fatalf("Lint returned error: %v", err)
 	}
@@ -39,7 +71,7 @@ func TestLintSkipsCommentsAndBlankLines(t *testing.T) {
 
 func TestLintShortRow(t *testing.T) {
 	board := strings.Replace(validBoard, "534678912\n", "53467891\n", 1)
-	findings, err := Lint(strings.NewReader(board))
+	findings, err := Lint(strings.NewReader(board), false)
 	if err != nil {
 		t.Fatalf("Lint returned error: %v", err)
 	}
@@ -50,7 +82,7 @@ func TestLintShortRow(t *testing.T) {
 
 func TestLintInvalidCharacter(t *testing.T) {
 	board := strings.Replace(validBoard, "534678912\n", "53467891X\n", 1)
-	findings, err := Lint(strings.NewReader(board))
+	findings, err := Lint(strings.NewReader(board), false)
 	if err != nil {
 		t.Fatalf("Lint returned error: %v", err)
 	}
@@ -62,7 +94,7 @@ func TestLintInvalidCharacter(t *testing.T) {
 
 func TestLintDuplicateInRow(t *testing.T) {
 	board := strings.Replace(validBoard, "534678912\n", "534678911\n", 1)
-	findings, err := Lint(strings.NewReader(board))
+	findings, err := Lint(strings.NewReader(board), false)
 	if err != nil {
 		t.Fatalf("Lint returned error: %v", err)
 	}
@@ -74,7 +106,7 @@ func TestLintDuplicateInRow(t *testing.T) {
 func TestLintDuplicateInColumn(t *testing.T) {
 	// Column 1 already has a 5 on line 1; put another 5 in column 1 of line 2.
 	board := strings.Replace(validBoard, "672195348\n", "572195348\n", 1)
-	findings, err := Lint(strings.NewReader(board))
+	findings, err := Lint(strings.NewReader(board), false)
 	if err != nil {
 		t.Fatalf("Lint returned error: %v", err)
 	}
@@ -88,7 +120,7 @@ func TestLintDuplicateInBox(t *testing.T) {
 	// which collides with (1,1) in the box (this also collides within row 3,
 	// since a solved row already contains every digit once).
 	board := strings.Replace(validBoard, "198342567\n", "195342567\n", 1)
-	findings, err := Lint(strings.NewReader(board))
+	findings, err := Lint(strings.NewReader(board), false)
 	if err != nil {
 		t.Fatalf("Lint returned error: %v", err)
 	}
@@ -100,7 +132,7 @@ func TestLintDuplicateInBox(t *testing.T) {
 func TestLintTooFewRows(t *testing.T) {
 	lines := strings.Split(strings.TrimRight(validBoard, "\n"), "\n")
 	board := strings.Join(lines[:8], "\n") + "\n"
-	findings, err := Lint(strings.NewReader(board))
+	findings, err := Lint(strings.NewReader(board), false)
 	if err != nil {
 		t.Fatalf("Lint returned error: %v", err)
 	}
@@ -111,7 +143,7 @@ func TestLintTooFewRows(t *testing.T) {
 
 func TestLintTooManyRows(t *testing.T) {
 	board := validBoard + "123456789\n"
-	findings, err := Lint(strings.NewReader(board))
+	findings, err := Lint(strings.NewReader(board), false)
 	if err != nil {
 		t.Fatalf("Lint returned error: %v", err)
 	}

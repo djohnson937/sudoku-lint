@@ -32,8 +32,10 @@ type cell struct {
 // wrong row length or row count, invalid characters, and duplicate values
 // within a row, column, or 3x3 box. Blank lines and lines starting with '#'
 // are treated as comments and skipped, so line numbers refer to the file,
-// not the board.
-func Lint(r io.Reader) ([]Finding, error) {
+// not the board. When strict is true, those comment and blank lines are
+// reported as findings instead of being skipped silently, for callers (like
+// a pre-commit hook) that want board files free of stray formatting.
+func Lint(r io.Reader, strict bool) ([]Finding, error) {
 	var findings []Finding
 	var grid [9][9]cell
 	rowIdx := 0
@@ -43,7 +45,22 @@ func Lint(r io.Reader) ([]Finding, error) {
 	for scanner.Scan() {
 		lineNum++
 		text := strings.TrimSpace(scanner.Text())
-		if text == "" || strings.HasPrefix(text, "#") {
+		if text == "" {
+			if strict {
+				findings = append(findings, Finding{
+					Line:    lineNum,
+					Message: "blank line not allowed in strict mode",
+				})
+			}
+			continue
+		}
+		if strings.HasPrefix(text, "#") {
+			if strict {
+				findings = append(findings, Finding{
+					Line:    lineNum,
+					Message: "comment line not allowed in strict mode",
+				})
+			}
 			continue
 		}
 

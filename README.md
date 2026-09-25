@@ -67,6 +67,14 @@ are reported against `<stdin>` in that case:
 cat examples/invalid.sudoku | go run .
 ```
 
+Pass `-strict` to reject board files that contain comment or blank lines,
+instead of skipping over them. Useful when a board file is meant to hold
+nothing but the grid, such as one checked in and linted by a pre-commit hook:
+
+```
+go run . -strict examples/valid.sudoku
+```
+
 ## Building
 
 ```
