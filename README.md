@@ -75,6 +75,21 @@ nothing but the grid, such as one checked in and linted by a pre-commit hook:
 go run . -strict examples/valid.sudoku
 ```
 
+## Pre-commit hook
+
+`examples/pre-commit` is a git hook that lints every staged `*.sudoku` file
+with `-strict`. It reads the staged version of each file, so what gets checked
+is what gets committed. Install it from the root of the repository that holds
+your boards, with `sudoku-lint` already on your `PATH`:
+
+```
+cp examples/pre-commit .git/hooks/pre-commit
+chmod +x .git/hooks/pre-commit
+```
+
+Set `SUDOKU_LINT` to the binary's full path if it isn't on `PATH`. The hook
+needs bash. A commit is blocked when any staged board has findings.
+
 ## Building
 
 ```

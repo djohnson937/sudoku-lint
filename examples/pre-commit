@@ -1,0 +1,32 @@
+#!/bin/bash
+# Git pre-commit hook: lint every staged *.sudoku file with sudoku-lint.
+#
+# The staged blob is linted, not the working tree copy, so a partially staged
+# file is checked as it will actually be committed. sudoku-lint only knows the
+# name "<stdin>" in that case, so the real path is swapped back into the output.
+# bash rather than sh because read -d '' is needed for NUL-separated paths.
+
+lint=${SUDOKU_LINT:-sudoku-lint}
+
+if ! command -v "$lint" >/dev/null 2>&1; then
+	echo "pre-commit: $lint not found on PATH (set SUDOKU_LINT to its location)" >&2
+	exit 2
+fi
+
+status=0
+
+while IFS= read -r -d '' file; do
+	out=$(git show ":$file" | "$lint" -strict -)
+	code=$?
+	if [ "$code" -ne 0 ]; then
+		while IFS= read -r line; do
+			printf '%s\n' "$file${line#<stdin>}"
+		done <<<"$out"
+		# Keep the worst code: 2 (could not run) beats 1 (findings).
+		if [ "$code" -gt "$status" ]; then
+			status=$code
+		fi
+	fi
+done < <(git diff --cached --name-only --diff-filter=ACM -z -- '*.sudoku')
+
+exit "$status"
